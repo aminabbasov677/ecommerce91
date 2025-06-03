@@ -6,33 +6,26 @@ const AreaChart = () => {
   const chartRef = useRef(null);
 
   useEffect(() => {
-    // Fetch session data from localStorage
-    const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
-    // Generate data for the last 7 days
-    const today = new Date();
-    const data = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0];
-      const session = sessions.find((s) => s.date === date) || {
-        date,
-        view: 0,
-        cart: 0,
-        checkout: 0,
-      };
-      const avg = (session.view + session.cart + session.checkout).toFixed(2);
-      data.push({ date, avg: parseFloat(avg) });
-    }
+    const data = [
+      { date: '2025-05-23', avg: 300 },
+      { date: '2025-05-24', avg: 320 },
+      { date: '2025-05-25', avg: 280 },
+      { date: '2025-05-26', avg: 350 },
+      { date: '2025-05-27', avg: 310 },
+      { date: '2025-05-28', avg: 330 },
+      { date: '2025-05-29', avg: 340 },
+    ];
 
     const ctx = canvasRef.current.getContext('2d');
 
+    // Destroy existing chart if it exists
     if (chartRef.current) {
       chartRef.current.destroy();
     }
 
+    // Create new Chart.js chart
     chartRef.current = new Chart(ctx, {
-      type: 'line',
+      type: 'line', // Using line chart with fill for area effect
       data: {
         labels: data.map((d) => d.date),
         datasets: [
@@ -42,8 +35,9 @@ const AreaChart = () => {
             fill: true,
             backgroundColor: 'rgba(0, 255, 195, 0.5)',
             borderColor: '#00ffc3',
-            tension: 0.4, // Matches D3's curveCatmullRom
-            pointRadius: 0, // No points, like D3
+            tension: 0.4, // Smooth curve similar to CatmullRom
+            pointBackgroundColor: '#00d1ff',
+            pointBorderColor: '#00d1ff',
           },
         ],
       },
@@ -55,20 +49,20 @@ const AreaChart = () => {
         },
         scales: {
           x: {
+            grid: { display: false },
             ticks: {
               color: '#00d1ff',
-              font: { family: "'Orbitron', sans-serif", size: 12 },
+              font: { family: 'Orbitron, sans-serif' },
             },
-            grid: { display: false },
           },
           y: {
             beginAtZero: true,
-            max: Math.max(...data.map((d) => d.avg), 100) * 1.2, // Ensure non-zero max
+            max: Math.max(...data.map((d) => d.avg)) * 1.2,
+            grid: { color: 'rgba(0, 209, 255, 0.2)' },
             ticks: {
               color: '#00d1ff',
-              font: { family: "'Orbitron', sans-serif", size: 12 },
+              font: { family: 'Orbitron, sans-serif' },
             },
-            grid: { color: 'rgba(0, 209, 255, 0.2)' },
           },
         },
         animation: {
@@ -87,7 +81,7 @@ const AreaChart = () => {
 
   return (
     <div className="chart-wrapper">
-      <canvas ref={canvasRef} className="chart-3d" />
+      <canvas ref={canvasRef} className="chart" width={500} height={400}></canvas>
     </div>
   );
 };
