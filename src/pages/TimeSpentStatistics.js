@@ -3,7 +3,7 @@ import AreaChart from './AreaChart';
 import DonutChart from './DonutChart';
 import './TimeSpentStatistics.css';
 
-const App = () => {
+const TimeSpentStatistics = () => {
   const [pageType, setPageType] = useState('view');
   const [startTime, setStartTime] = useState(performance.now());
 
@@ -53,4 +53,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default TimeSpentStatistics;
