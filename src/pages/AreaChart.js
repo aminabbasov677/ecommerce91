@@ -1,90 +1,93 @@
 import { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
+import Chart from 'chart.js/auto';
 
 const AreaChart = () => {
-  const svgRef = useRef();
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
 
   useEffect(() => {
-    const data = [
-      { date: '2025-05-23', avg: 300 },
-      { date: '2025-05-24', avg: 320 },
-      { date: '2025-05-25', avg: 280 },
-      { date: '2025-05-26', avg: 350 },
-      { date: '2025-05-27', avg: 310 },
-      { date: '2025-05-28', avg: 330 },
-      { date: '2025-05-29', avg: 340 },
-    ];
+    // Fetch session data from localStorage
+    const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+    // Generate data for the last 7 days
+    const today = new Date();
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
+      const session = sessions.find((s) => s.date === date) || {
+        date,
+        view: 0,
+        cart: 0,
+        checkout: 0,
+      };
+      const avg = (session.view + session.cart + session.checkout).toFixed(2);
+      data.push({ date, avg: parseFloat(avg) });
+    }
 
-    const width = 500;
-    const height = 400;
-    const margin = { top: 20, right: 20, bottom: 50, left: 50 };
+    const ctx = canvasRef.current.getContext('2d');
 
-    const svg = d3
-      .select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .style('overflow', 'visible');
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
 
-    const x = d3
-      .scaleBand()
-      .domain(data.map((d) => d.date))
-      .range([margin.left, width - margin.right])
-      .padding(0.1);
+    chartRef.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map((d) => d.date),
+        datasets: [
+          {
+            label: 'Average Session Time',
+            data: data.map((d) => d.avg),
+            fill: true,
+            backgroundColor: 'rgba(0, 255, 195, 0.5)',
+            borderColor: '#00ffc3',
+            tension: 0.4, // Matches D3's curveCatmullRom
+            pointRadius: 0, // No points, like D3
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: '#00d1ff',
+              font: { family: "'Orbitron', sans-serif", size: 12 },
+            },
+            grid: { display: false },
+          },
+          y: {
+            beginAtZero: true,
+            max: Math.max(...data.map((d) => d.avg), 100) * 1.2, // Ensure non-zero max
+            ticks: {
+              color: '#00d1ff',
+              font: { family: "'Orbitron', sans-serif", size: 12 },
+            },
+            grid: { color: 'rgba(0, 209, 255, 0.2)' },
+          },
+        },
+        animation: {
+          duration: 2000,
+          easing: 'easeInOutCubic',
+        },
+      },
+    });
 
-    const y = d3
-      .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.avg) * 1.2])
-      .range([height - margin.bottom, margin.top]);
-
-    const area = d3
-      .area()
-      .x((d) => x(d.date) + x.bandwidth() / 2)
-      .y0(height - margin.bottom)
-      .y1((d) => y(d.avg))
-      .curve(d3.curveCatmullRom);
-
-    svg.selectAll('*').remove();
-
-    svg
-      .append('path')
-      .datum(data)
-      .attr('fill', 'rgba(0, 255, 195, 0.5)')
-      .attr('d', area)
-      .attr('class', 'area');
-
-    svg
-      .append('g')
-      .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(x))
-      .selectAll('text')
-      .style('fill', '#00d1ff')
-      .style('font-family', 'Orbitron, sans-serif');
-
-    svg
-      .append('g')
-      .attr('transform', `translate(${margin.left},0)`)
-      .call(d3.axisLeft(y))
-      .selectAll('text')
-      .style('fill', '#00d1ff')
-      .style('font-family', 'Orbitron, sans-serif');
-
-    svg
-      .select('.area')
-      .transition()
-      .duration(2000)
-      .ease(d3.easeCubic)
-      .attrTween('d', () => {
-        const interpolator = d3.interpolateArray(
-          data.map((d) => ({ date: d.date, avg: 0 })),
-          data
-        );
-        return (t) => area(interpolator(t));
-      });
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
   }, []);
 
   return (
     <div className="chart-wrapper">
-      <svg ref={svgRef} className="chart"></svg>
+      <canvas ref={canvasRef} className="chart-3d" />
     </div>
   );
 };
