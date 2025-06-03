@@ -1,73 +1,100 @@
 import { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
+import Chart from 'chart.js/auto';
 
 const DonutChart = () => {
-  const svgRef = useRef();
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
 
   useEffect(() => {
+    // Fetch session data for today
+    const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+    const today = new Date().toISOString().split('T')[0];
+    const session = sessions.find((s) => s.date === today) || {
+      view: 0,
+      cart: 0,
+      checkout: 0,
+    };
     const data = [
-      { label: 'View', value: 300 },
-      { label: 'Cart', value: 120 },
-      { label: 'Checkout', value: 60 },
+      { label: 'View', value: session.view || 0 },
+      { label: 'Cart', value: session.cart || 0 },
+      { label: 'Checkout', value: session.checkout || 0 },
     ];
 
-    const width = 500;
-    const height = 400;
-    const radius = Math.min(width, height) / 2 - 50;
+    const ctx = canvasRef.current.getContext('2d');
 
-    const svg = d3
-      .select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .append('g')
-      .attr('transform', `translate(${width / 2},${height / 2})`);
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
 
-    const arc = d3
-      .arc()
-      .innerRadius(radius * 0.6)
-      .outerRadius(radius);
+    chartRef.current = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: data.map((d) => d.label),
+        datasets: [
+          {
+            data: data.map((d) => d.value),
+            backgroundColor: ['#00ffc3', '#ff00ff', '#00d1ff'],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            bodyFont: { family: "'Orbitron', sans-serif" },
+          },
+        },
+        cutout: '60%', // Matches D3's innerRadius
+        animation: {
+          animateRotate: true,
+          duration: 2000,
+          easing: 'easeInOutCubic',
+        },
+        plugins: [{
+          id: 'customLabels',
+          afterDraw: (chart) => {
+            const { ctx, chartArea } = chart;
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+            const radius = Math.min(chartArea.right - chartArea.left, chartArea.bottom - chartArea.top) / 2;
+            const innerRadius = radius * 0.6;
+            const labelRadius = (radius + innerRadius) / 2;
 
-    const pie = d3
-      .pie()
-      .value((d) => d.value)
-      .sort(null);
+            chart.data.labels.forEach((label, i) => {
+              const meta = chart.getDatasetMeta(0);
+              const arc = meta.data[i];
+              if (!arc) return; // Skip if arc is undefined (zero value)
+              const { startAngle, endAngle } = arc;
+              const midAngle = (startAngle + endAngle) / 2;
+              const x = centerX + Math.cos(midAngle) * labelRadius;
+              const y = centerY + Math.sin(midAngle) * labelRadius;
 
-    const colors = ['#00ffc3', '#ff00ff', '#00d1ff'];
+              ctx.save();
+              ctx.fillStyle = '#00d1ff';
+              ctx.font = "12px 'Orbitron', sans-serif";
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(label, x, y);
+              ctx.restore();
+            });
+          },
+        }],
+      },
+    });
 
-    svg.selectAll('*').remove();
-
-    svg
-      .selectAll('path')
-      .data(pie(data))
-      .enter()
-      .append('path')
-      .attr('d', arc)
-      .attr('fill', (d, i) => colors[i])
-      .attr('class', 'arc')
-      .transition()
-      .duration(2000)
-      .ease(d3.easeCubic)
-      .attrTween('d', function (d) {
-        const i = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
-        return (t) => arc(i(t));
-      });
-
-    svg
-      .selectAll('text')
-      .data(pie(data))
-      .enter()
-      .append('text')
-      .attr('transform', (d) => `translate(${arc.centroid(d)})`)
-      .attr('dy', '0.35em')
-      .style('text-anchor', 'middle')
-      .style('fill', '#00d1ff')
-      .style('font-family', 'Orbitron, sans-serif')
-      .text((d) => d.data.label);
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
   }, []);
 
   return (
     <div className="chart-wrapper">
-      <svg ref={svgRef} className="chart"></svg>
+      <canvas ref={canvasRef} className="chart-3d" />
     </div>
   );
 };
