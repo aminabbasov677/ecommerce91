@@ -18,14 +18,14 @@ const AreaChart = () => {
 
     const ctx = canvasRef.current.getContext('2d');
 
-    // Destroy existing chart if it exists
+   
     if (chartRef.current) {
       chartRef.current.destroy();
     }
 
-    // Create new Chart.js chart
+    
     chartRef.current = new Chart(ctx, {
-      type: 'line', // Using line chart with fill for area effect
+      type: 'line', 
       data: {
         labels: data.map((d) => d.date),
         datasets: [
@@ -35,7 +35,7 @@ const AreaChart = () => {
             fill: true,
             backgroundColor: 'rgba(0, 255, 195, 0.5)',
             borderColor: '#00ffc3',
-            tension: 0.4, // Smooth curve similar to CatmullRom
+            tension: 0.4, 
             pointBackgroundColor: '#00d1ff',
             pointBorderColor: '#00d1ff',
           },
