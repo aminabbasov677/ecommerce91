@@ -6,26 +6,20 @@ const DonutChart = () => {
   const chartRef = useRef(null);
 
   useEffect(() => {
-    // Fetch session data for today
-    const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
-    const today = new Date().toISOString().split('T')[0];
-    const session = sessions.find((s) => s.date === today) || {
-      view: 0,
-      cart: 0,
-      checkout: 0,
-    };
     const data = [
-      { label: 'View', value: session.view || 0 },
-      { label: 'Cart', value: session.cart || 0 },
-      { label: 'Checkout', value: session.checkout || 0 },
+      { label: 'View', value: 300 },
+      { label: 'Cart', value: 120 },
+      { label: 'Checkout', value: 60 },
     ];
 
     const ctx = canvasRef.current.getContext('2d');
 
+    // Destroy existing chart if it exists
     if (chartRef.current) {
       chartRef.current.destroy();
     }
 
+    // Create new Chart.js chart
     chartRef.current = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -42,46 +36,20 @@ const DonutChart = () => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
-          tooltip: {
-            bodyFont: { family: "'Orbitron', sans-serif" },
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#00d1ff',
+              font: { family: 'Orbitron, sans-serif' },
+            },
           },
         },
-        cutout: '60%', // Matches D3's innerRadius
+        cutout: '60%', // Mimics D3 innerRadius
         animation: {
-          animateRotate: true,
           duration: 2000,
           easing: 'easeInOutCubic',
+          animateRotate: true,
         },
-        plugins: [{
-          id: 'customLabels',
-          afterDraw: (chart) => {
-            const { ctx, chartArea } = chart;
-            const centerX = (chartArea.left + chartArea.right) / 2;
-            const centerY = (chartArea.top + chartArea.bottom) / 2;
-            const radius = Math.min(chartArea.right - chartArea.left, chartArea.bottom - chartArea.top) / 2;
-            const innerRadius = radius * 0.6;
-            const labelRadius = (radius + innerRadius) / 2;
-
-            chart.data.labels.forEach((label, i) => {
-              const meta = chart.getDatasetMeta(0);
-              const arc = meta.data[i];
-              if (!arc) return; // Skip if arc is undefined (zero value)
-              const { startAngle, endAngle } = arc;
-              const midAngle = (startAngle + endAngle) / 2;
-              const x = centerX + Math.cos(midAngle) * labelRadius;
-              const y = centerY + Math.sin(midAngle) * labelRadius;
-
-              ctx.save();
-              ctx.fillStyle = '#00d1ff';
-              ctx.font = "12px 'Orbitron', sans-serif";
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(label, x, y);
-              ctx.restore();
-            });
-          },
-        }],
       },
     });
 
@@ -94,7 +62,7 @@ const DonutChart = () => {
 
   return (
     <div className="chart-wrapper">
-      <canvas ref={canvasRef} className="chart-3d" />
+      <canvas ref={canvasRef} className="chart" width={500} height={400}></canvas>
     </div>
   );
 };
