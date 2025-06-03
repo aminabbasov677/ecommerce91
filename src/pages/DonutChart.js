@@ -14,12 +14,12 @@ const DonutChart = () => {
 
     const ctx = canvasRef.current.getContext('2d');
 
-    // Destroy existing chart if it exists
+    
     if (chartRef.current) {
       chartRef.current.destroy();
     }
 
-    // Create new Chart.js chart
+    
     chartRef.current = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -44,7 +44,7 @@ const DonutChart = () => {
             },
           },
         },
-        cutout: '60%', // Mimics D3 innerRadius
+        cutout: '60%', 
         animation: {
           duration: 2000,
           easing: 'easeInOutCubic',
